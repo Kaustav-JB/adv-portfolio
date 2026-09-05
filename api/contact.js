@@ -22,6 +22,13 @@ module.exports = async function handler(req, res) {
         return;
     }
 
+    if (!process.env.CONTACT_RECIPIENT_EMAIL) {
+        console.error('CONTACT_RECIPIENT_EMAIL is not set in the environment.');
+        res.writeHead(303, { Location: `${baseUrl}?submitted=false#contact` });
+        res.end();
+        return;
+    }
+
     const name = body.name || '';
     const email = body.email || '';
     const matter = body.matter || '';
@@ -45,7 +52,7 @@ module.exports = async function handler(req, res) {
             },
             body: JSON.stringify({
                 from: 'Portfolio Contact Form <onboarding@resend.dev>',
-                to: ['nishashreya032@gmail.com'],
+                to: [process.env.CONTACT_RECIPIENT_EMAIL],
                 reply_to: email || undefined,
                 subject: body.subject || 'New Inquiry from Portfolio Website',
                 html,
