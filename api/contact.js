@@ -22,23 +22,30 @@ module.exports = async function handler(req, res) {
         return;
     }
 
+    const siteOrigin =
+        req.headers.origin || (req.headers.host ? `https://${req.headers.host}` : baseUrl);
+
     try {
+        const formData = new FormData();
+        formData.append('access_key', process.env.WEB3FORMS_ACCESS_KEY);
+        formData.append('subject', body.subject || 'New Inquiry from Portfolio Website');
+        formData.append('name', body.name || '');
+        formData.append('email', body.email || '');
+        formData.append('matter', body.matter || '');
+        formData.append('message', body.message || '');
+        formData.append('h-captcha-response', body['h-captcha-response'] || '');
+
         const web3Response = await fetch('https://api.web3forms.com/submit', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
                 Accept: 'application/json',
-                'User-Agent': 'Mozilla/5.0 (compatible; PortfolioContactForm/1.0; +https://vercel.com)',
+                'User-Agent':
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+                'Accept-Language': 'en-US,en;q=0.9',
+                Origin: siteOrigin,
+                Referer: `${siteOrigin}/`,
             },
-            body: JSON.stringify({
-                access_key: process.env.WEB3FORMS_ACCESS_KEY,
-                subject: body.subject || 'New Inquiry from Portfolio Website',
-                name: body.name || '',
-                email: body.email || '',
-                matter: body.matter || '',
-                message: body.message || '',
-                'h-captcha-response': body['h-captcha-response'] || '',
-            }),
+            body: formData,
         });
 
         const rawBody = await web3Response.text();
