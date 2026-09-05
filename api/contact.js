@@ -28,6 +28,7 @@ module.exports = async function handler(req, res) {
             headers: {
                 'Content-Type': 'application/json',
                 Accept: 'application/json',
+                'User-Agent': 'Mozilla/5.0 (compatible; PortfolioContactForm/1.0; +https://vercel.com)',
             },
             body: JSON.stringify({
                 access_key: process.env.WEB3FORMS_ACCESS_KEY,
@@ -40,8 +41,24 @@ module.exports = async function handler(req, res) {
             }),
         });
 
-        const result = await web3Response.json();
+        const rawBody = await web3Response.text();
+        let result;
+        try {
+            result = JSON.parse(rawBody);
+        } catch (parseError) {
+            console.error(
+                `Web3Forms returned a non-JSON response (status ${web3Response.status}):`,
+                rawBody.slice(0, 500)
+            );
+            res.writeHead(303, { Location: `${baseUrl}?submitted=false#contact` });
+            res.end();
+            return;
+        }
+
         const status = result.success ? 'true' : 'false';
+        if (!result.success) {
+            console.error('Web3Forms rejected the submission:', result.message || result);
+        }
         res.writeHead(303, { Location: `${baseUrl}?submitted=${status}#contact` });
         res.end();
     } catch (error) {
