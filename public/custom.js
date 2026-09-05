@@ -29,8 +29,8 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// Contact Form: native submission to our /api/contact proxy (keeps the Web3Forms
-// access key server-side; required for hCaptcha compatibility)
+// Contact Form: native submission to our /api/contact proxy (keeps the email
+// service's API key server-side)
 const redirectBaseInput = document.getElementById('redirect-base');
 redirectBaseInput.value = window.location.origin + window.location.pathname;
 

@@ -8,53 +8,57 @@ module.exports = async function handler(req, res) {
     const baseUrl = body.redirect_base || '/';
     const botcheck = body.botcheck;
 
-    // Honeypot: silently report success without spending a Web3Forms submission
+    // Honeypot: silently report success without sending an email
     if (botcheck) {
         res.writeHead(303, { Location: `${baseUrl}?submitted=true#contact` });
         res.end();
         return;
     }
 
-    if (!process.env.WEB3FORMS_ACCESS_KEY) {
-        console.error('WEB3FORMS_ACCESS_KEY is not set in the environment.');
+    if (!process.env.RESEND_API_KEY) {
+        console.error('RESEND_API_KEY is not set in the environment.');
         res.writeHead(303, { Location: `${baseUrl}?submitted=false#contact` });
         res.end();
         return;
     }
 
-    const siteOrigin =
-        req.headers.origin || (req.headers.host ? `https://${req.headers.host}` : baseUrl);
+    const name = body.name || '';
+    const email = body.email || '';
+    const matter = body.matter || '';
+    const message = body.message || '';
+
+    const html = `
+        <h2>New Inquiry from Portfolio Website</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Nature of Inquiry:</strong> ${matter}</p>
+        <p><strong>Message:</strong></p>
+        <p>${message.replace(/\n/g, '<br>')}</p>
+    `;
 
     try {
-        const formData = new FormData();
-        formData.append('access_key', process.env.WEB3FORMS_ACCESS_KEY);
-        formData.append('subject', body.subject || 'New Inquiry from Portfolio Website');
-        formData.append('name', body.name || '');
-        formData.append('email', body.email || '');
-        formData.append('matter', body.matter || '');
-        formData.append('message', body.message || '');
-        formData.append('h-captcha-response', body['h-captcha-response'] || '');
-
-        const web3Response = await fetch('https://api.web3forms.com/submit', {
+        const resendResponse = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
-                Accept: 'application/json',
-                'User-Agent':
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-                'Accept-Language': 'en-US,en;q=0.9',
-                Origin: siteOrigin,
-                Referer: `${siteOrigin}/`,
+                Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+                'Content-Type': 'application/json',
             },
-            body: formData,
+            body: JSON.stringify({
+                from: 'Portfolio Contact Form <onboarding@resend.dev>',
+                to: ['nishashreya032@gmail.com'],
+                reply_to: email || undefined,
+                subject: body.subject || 'New Inquiry from Portfolio Website',
+                html,
+            }),
         });
 
-        const rawBody = await web3Response.text();
+        const rawBody = await resendResponse.text();
         let result;
         try {
             result = JSON.parse(rawBody);
         } catch (parseError) {
             console.error(
-                `Web3Forms returned a non-JSON response (status ${web3Response.status}):`,
+                `Resend returned a non-JSON response (status ${resendResponse.status}):`,
                 rawBody.slice(0, 500)
             );
             res.writeHead(303, { Location: `${baseUrl}?submitted=false#contact` });
@@ -62,14 +66,14 @@ module.exports = async function handler(req, res) {
             return;
         }
 
-        const status = result.success ? 'true' : 'false';
-        if (!result.success) {
-            console.error('Web3Forms rejected the submission:', result.message || result);
+        const success = resendResponse.ok && Boolean(result.id);
+        if (!success) {
+            console.error('Resend rejected the submission:', result);
         }
-        res.writeHead(303, { Location: `${baseUrl}?submitted=${status}#contact` });
+        res.writeHead(303, { Location: `${baseUrl}?submitted=${success}#contact` });
         res.end();
     } catch (error) {
-        console.error('Error forwarding submission to Web3Forms:', error);
+        console.error('Error sending email via Resend:', error);
         res.writeHead(303, { Location: `${baseUrl}?submitted=false#contact` });
         res.end();
     }
