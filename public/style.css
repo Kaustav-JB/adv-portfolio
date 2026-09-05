@@ -119,6 +119,24 @@ body {
     box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(197, 168, 128, 0.15);
 }
 
+/* Scroll/Load-in Reveal Animation */
+.fade-in-up {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.9s cubic-bezier(0.4, 0, 0.2, 1), transform 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-in-up.in-view {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.fade-in-up-delay-1 { transition-delay: 0.1s; }
+.fade-in-up-delay-2 { transition-delay: 0.25s; }
+.fade-in-up-delay-3 { transition-delay: 0.4s; }
+.fade-in-up-delay-4 { transition-delay: 0.55s; }
+.fade-in-up-delay-5 { transition-delay: 0.7s; }
+
 /* Image Masking */
 .glass-image-container {
     mask-image: linear-gradient(to bottom, black 80%, transparent 100%);

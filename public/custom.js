@@ -1,6 +1,22 @@
 // Initialize Lucide Icons
 lucide.createIcons();
 
+// Scroll-triggered fade-in-up reveal (fires as each element enters the viewport,
+// so it works correctly even when the page loads already scrolled to a mid-section)
+const revealEls = document.querySelectorAll('.fade-in-up');
+const revealObserver = new IntersectionObserver(
+    (entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('in-view');
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    },
+    { threshold: 0.15 }
+);
+revealEls.forEach((el) => revealObserver.observe(el));
+
 // Set current year in footer
 document.getElementById('year').textContent = new Date().getFullYear();
 
